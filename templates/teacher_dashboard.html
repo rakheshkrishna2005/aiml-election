@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Teacher Dashboard{% endblock %}
+{% block content %}
+
+<h1 id="teacher-dashboard" style="text-align: center; color: black;">Teacher Dashboard</h1>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="{{ category }}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+{% for position_id, position_data in positions.items() %}
+  <div class="position" style="margin-bottom: 20px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background-color: white; border-radius: 8px;">
+    <h3 id="{{ position_data.name }}" style="text-align: center; color: black;">{{ position_data.name }}</h3>
+
+    {% if position_data.voted %}
+      <p style="text-align: center;">Vote casted successfully.</p>
+    {% else %}
+      <div class="candidates" style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+        {% for candidate in position_data.candidates %}
+          <div class="candidate" style="flex-basis: calc(33.333% - 20px); text-align: center;">
+            <img src="{{ url_for('static', filename='images/' + candidate.image) }}" alt="{{ candidate.name }}" style="width: 100px; height: 100px; border-radius: 50%; display: block; margin: 10px auto;">
+            <p>{{ candidate.name }}</p>
+            <form action="{{ url_for('vote') }}" method="post">
+              <input type="hidden" name="position_id" value="{{ position_id }}">
+              <input type="hidden" name="candidate_id" value="{{ candidate.id }}">
+              <button type="submit" style="background-color: #000000; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Vote</button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+{% endfor %}
+
+{% endblock %}
