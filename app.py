@@ -1,5 +1,4 @@
-import psycopg2
-from psycopg2 import sql
+import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -22,12 +21,9 @@ POSITIONS = {
 
 # Database connection function
 def get_db_connection():
-    conn = psycopg2.connect(
-        host="localhost",
-        database="",
-        user="postgres",
-        password=""
-    )
+    conn = sqlite3.connect('database.db')  # Use an SQLite database file
+    conn.row_factory = sqlite3.Row  # This allows us to treat rows as dictionaries
+    conn.execute("PRAGMA foreign_keys = ON")  # Enable foreign key support in SQLite
     return conn
 
 # Database initialization
@@ -37,16 +33,17 @@ def init_db():
     
     # Create tables
     cur.execute('''CREATE TABLE IF NOT EXISTS users
-                   (id SERIAL PRIMARY KEY,
+                   (id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT UNIQUE NOT NULL,
                     password TEXT NOT NULL,
                     role TEXT NOT NULL)''')
     
     cur.execute('''CREATE TABLE IF NOT EXISTS votes
-                   (id SERIAL PRIMARY KEY,
-                    user_id INTEGER REFERENCES users(id),
+                   (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
                     candidate_id INTEGER NOT NULL,
-                    position_id INTEGER NOT NULL)''')
+                    position_id INTEGER NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id))''')
     
     conn.commit()
     cur.close()
@@ -79,11 +76,11 @@ def signup():
         cur = conn.cursor()
         
         try:
-            cur.execute("INSERT INTO users (username, password, role) VALUES (%s, %s, %s)", (username, hashed_password, role))
+            cur.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (username, hashed_password, role))
             conn.commit()
             flash('Account created successfully. Please log in.', 'success')
             return redirect(url_for('login'))
-        except psycopg2.IntegrityError:
+        except sqlite3.IntegrityError:
             flash('Username already exists. Please choose a different one.', 'error')
         finally:
             cur.close()
@@ -99,17 +96,17 @@ def login():
         
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+        cur.execute("SELECT * FROM users WHERE username = ?", (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
         
-        if user and check_password_hash(user[2], password):
-            session['user_id'] = user[0]
-            session['role'] = user[3]
-            if user[3] == 'admin':
+        if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['id']
+            session['role'] = user['role']
+            if user['role'] == 'admin':
                 return redirect(url_for('admin_dashboard'))
-            elif user[3] == 'teacher':
+            elif user['role'] == 'teacher':
                 return redirect(url_for('teacher_dashboard'))
             else:
                 return redirect(url_for('student_dashboard'))
@@ -142,14 +139,14 @@ def admin_dashboard():
                     COUNT(CASE WHEN users.role = 'teacher' THEN 1 ELSE NULL END) as teacher_votes
                 FROM votes
                 JOIN users ON votes.user_id = users.id
-                WHERE votes.candidate_id = %s AND votes.position_id = %s
+                WHERE votes.candidate_id = ? AND votes.position_id = ?
             ''', (candidate['id'], position_id))
             vote_counts = cur.fetchone()
             results[position_data['name']].append({
                 'name': candidate['name'],
-                'student_votes': vote_counts[0],
-                'teacher_votes': vote_counts[1],
-                'total_points': vote_counts[0] + vote_counts[1] * 5
+                'student_votes': vote_counts['student_votes'],
+                'teacher_votes': vote_counts['teacher_votes'],
+                'total_points': vote_counts['student_votes'] + vote_counts['teacher_votes'] * 5
             })
     
     cur.close()
@@ -165,8 +162,8 @@ def teacher_dashboard():
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT position_id FROM votes WHERE user_id = %s", (user_id,))
-    voted_positions = {row[0] for row in cur.fetchall()}
+    cur.execute("SELECT position_id FROM votes WHERE user_id = ?", (user_id,))
+    voted_positions = {row['position_id'] for row in cur.fetchall()}
     cur.close()
     conn.close()
     
@@ -189,8 +186,8 @@ def student_dashboard():
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT position_id FROM votes WHERE user_id = %s", (user_id,))
-    voted_positions = {row[0] for row in cur.fetchall()}
+    cur.execute("SELECT position_id FROM votes WHERE user_id = ?", (user_id,))
+    voted_positions = {row['position_id'] for row in cur.fetchall()}
     cur.close()
     conn.close()
     
@@ -217,14 +214,14 @@ def vote():
     
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM votes WHERE user_id = %s AND position_id = %s", (user_id, position_id))
+    cur.execute("SELECT * FROM votes WHERE user_id = ? AND position_id = ?", (user_id, position_id))
     if cur.fetchone():
         cur.close()
         conn.close()
         flash('You have already voted for this position', 'error')
         return redirect(url_for(f"{user_role}_dashboard"))
     
-    cur.execute("INSERT INTO votes (user_id, candidate_id, position_id) VALUES (%s, %s, %s)", (user_id, candidate_id, position_id))
+    cur.execute("INSERT INTO votes (user_id, candidate_id, position_id) VALUES (?, ?, ?)", (user_id, candidate_id, position_id))
     conn.commit()
     cur.close()
     conn.close()
