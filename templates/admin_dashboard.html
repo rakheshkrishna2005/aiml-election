@@ -1,0 +1,33 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<h1 style="text-align: center; color: black;">Admin Dashboard</h1>
+
+<h2 style="text-align: center; color: black;">Election Results</h2>
+
+{% for position, candidates in results.items() %}
+<div class="position" style="margin-bottom: 20px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background-color: white; border-radius: 8px;">
+    <h3 style="text-align: center; color: black;">{{ position }}</h3>
+    <table class="results-table" style="width: 100%; border-collapse: collapse; margin: 0 auto; background-color: white; color: black;">
+        <thead>
+            <tr style="border-bottom: 1px solid black;">
+                <th style="padding: 10px; text-align: left; background-color: white;">Candidate</th>
+                <th style="padding: 10px; text-align: center; background-color: white;">Student Votes</th>
+                <th style="padding: 10px; text-align: center; background-color: white;">Teacher Votes</th>
+                <th style="padding: 10px; text-align: center; background-color: white;">Total Points</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for candidate in candidates %}
+            <tr style="border-bottom: 1px solid black;">
+                <td style="padding: 10px; background-color: white;">{{ candidate.name }}</td>
+                <td style="padding: 10px; text-align: center; background-color: white;">{{ candidate.student_votes }}</td>
+                <td style="padding: 10px; text-align: center; background-color: white;">{{ candidate.teacher_votes }}</td>
+                <td style="padding: 10px; text-align: center; background-color: white;">{{ candidate.total_points }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+{% endblock %}

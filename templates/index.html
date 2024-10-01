@@ -1,0 +1,35 @@
+{% extends "home_base.html" %}
+{% block title %}Election '24{% endblock %}
+{% block extra_css %}
+<style>
+    .centered-content {
+        max-width: 600px;
+        margin: 40px auto;
+        text-align: center;
+    }
+    .btn {
+        display: inline-block;
+        background-color: #333333;
+        color: #ffffff;
+        text-decoration: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+        margin: 10px;
+    }
+    .btn:hover {
+        background-color: #555555;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="centered-content">
+    <h2>Welcome to the Election Website of AIML</h2>
+    <p>Please login to access your dashboard or sign up if you don't have an account.</p>
+    <div class="auth-links">
+        <a href="{{ url_for('login') }}" class="btn">Login</a>
+        <a href="{{ url_for('signup') }}" class="btn">Sign Up</a>
+    </div>
+    <h3>Developed by <a href="https://linkedin.com/in/rakhesh-krishna-p">Rakhesh Krishna</a> III yr CSE (AI&ML)</h3>
+</div>
+{% endblock %}
