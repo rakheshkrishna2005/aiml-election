@@ -26,16 +26,70 @@
           <div class="candidate" style="flex-basis: calc(33.333% - 20px); text-align: center;">
             <img src="{{ url_for('static', filename='images/' + candidate.image) }}" alt="{{ candidate.name }}" style="width: 100px; height: 100px; border-radius: 50%; display: block; margin: 10px auto;">
             <p>{{ candidate.name }}</p>
-            <form action="{{ url_for('vote') }}" method="post">
+            <form class="vote-form" method="POST" action="{{ url_for('vote') }}">
               <input type="hidden" name="position_id" value="{{ position_id }}">
               <input type="hidden" name="candidate_id" value="{{ candidate.id }}">
               <button type="submit" style="background-color: #000000; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Vote</button>
-            </form>
+          </form>
           </div>
         {% endfor %}
       </div>
     {% endif %}
   </div>
 {% endfor %}
-
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const voteForms = document.querySelectorAll('.vote-form');
+      voteForms.forEach(form => {
+          form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              
+              fetch(this.action, {
+                  method: 'POST',
+                  body: new FormData(this),
+                  headers: {
+                      'X-Requested-With': 'XMLHttpRequest'
+                  }
+              })
+              .then(response => response.text())
+              .then(html => {
+                  document.body.innerHTML = html;
+                  // Re-attach event listeners to the new DOM
+                  attachEventListeners();
+              })
+              .catch(error => {
+                  console.error('Error:', error);
+                  alert('An error occurred while casting your vote.');
+              });
+          });
+      });
+  });
+  
+  function attachEventListeners() {
+      const voteForms = document.querySelectorAll('.vote-form');
+      voteForms.forEach(form => {
+          form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              
+              fetch(this.action, {
+                  method: 'POST',
+                  body: new FormData(this),
+                  headers: {
+                      'X-Requested-With': 'XMLHttpRequest'
+                  }
+              })
+              .then(response => response.text())
+              .then(html => {
+                  document.body.innerHTML = html;
+                  // Re-attach event listeners to the new DOM
+                  attachEventListeners();
+              })
+              .catch(error => {
+                  console.error('Error:', error);
+                  alert('An error occurred while casting your vote.');
+              });
+          });
+      });
+  }
+</script>
 {% endblock %}
